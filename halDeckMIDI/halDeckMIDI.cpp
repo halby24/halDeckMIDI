@@ -9,6 +9,7 @@
 #include <csignal>
 #include <iostream>
 #include <synchapi.h>
+#include <libremidi/libremidi.hpp>
 
 volatile std::sig_atomic_t signal_received = 0;
 
