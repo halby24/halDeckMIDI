@@ -1,70 +1,90 @@
 ﻿// halDeckMIDI.cpp : このファイルには 'main' 関数が含まれています。プログラム実行の開始と終了がそこで行われます。
 //
 
-#include <iostream>
-
-#include <iostream>
-#include <windows.h>
-
-#include <csignal>
-#include <iostream>
-#include <synchapi.h>
 #include <libremidi/libremidi.hpp>
 
-volatile std::sig_atomic_t signal_received = 0;
+#include <chrono>
+#include <cstdlib>
+#include <iostream>
+#include <map>
+#include <thread>
 
-// シグナルハンドラ関数
-void signal_handler(int signal) {
-    signal_received = 1;
-}
+std::string hexStr(const uint8_t *data, int len);
 
-void CALLBACK MidiInProc(HMIDIIN hMidiIn, UINT wMsg, DWORD_PTR dwInstance, DWORD_PTR dwParam1, DWORD_PTR dwParam2);
+int main()
+try
+{
+    // Set the configuration of our MIDI port
+    // Note that the callback will be invoked from a separate thread,
+    // it is up to you to protect your data structures afterwards.
+    // For instance if you are using a GUI toolkit, don't do GUI actions
+    // in that callback !
+    auto my_callback = [](const libremidi::message& message) {
+        std::cout << "Received message: ";
+        std::cout << hexStr(message.bytes.data(), message.size()) << '\n';
+    };
 
-int main() {
-    std::signal(SIGTERM, signal_handler);
+    // Create the midi object
+    libremidi::midi_in midi_in{
+        libremidi::input_configuration{ .on_message = my_callback }
+    };
 
-    HMIDIIN hMidiDevice = nullptr;
-    UINT deviceId = 1; // 0は通常デフォルトのMIDIデバイスを指します。利用可能なデバイスのリストはmidiInGetDevCaps関数で取得できます。
+    for (auto& api : libremidi::available_apis())
+    {
+        std::string_view api_name = libremidi::get_api_display_name(api);
+        std::cout << "Displaying ports for: " << api_name << std::endl;
 
-    // MIDIデバイスを開く
-    const MMRESULT result = midiInOpen(&hMidiDevice, deviceId, reinterpret_cast<DWORD_PTR>(MidiInProc), 0, CALLBACK_FUNCTION);
-    if(result != MMSYSERR_NOERROR) {
-        std::cerr << "Failed to open MIDI input device." << std::endl;
-        return 1;
+        // On Windows 10, apparently the MIDI devices aren't exactly available as soon as the app open...
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
+        libremidi::observer midi_obs{{}, libremidi::observer_configuration_for(api)};
+        {
+            // Check inputs.
+            auto ports = midi_obs.get_input_ports();
+            std::cout << ports.size() << " MIDI input sources:\n";
+            for (auto&& port : ports)
+            {
+                auto name = port.port_name;
+                std::cout << " - " << name << '\n';
+                if (name.find("nanoKONTROL2") != std::string::npos)
+                {
+                    std::cout << "  - nanoKONTROL2 found\n";
+
+                    // Open a given midi port.
+                    // The argument is a libremidi::input_port gotten from a libremidi::observer.
+                    midi_in.open_port(port);
+                    std::cin.get();
+                }
+            }
+        }
+
+        {
+            // Check outputs.
+            auto ports = midi_obs.get_output_ports();
+            std::cout << ports.size() << " MIDI output sinks:\n";
+            for (auto&& port : ports)
+                std::cout << " - " << port.port_name << '\n';
+        }
+
+        std::cout << "\n";
     }
-
-    // MIDI入力の受信を開始
-    midiInStart(hMidiDevice);
-    // SIGTERMを受け取るまでループを続ける
-    while (!signal_received) {
-        std::cin.get(); // プロセスを中断し、シグナルを待つ
-    }
-
-
-    // MIDIデバイスを閉じる
-    midiInStop(hMidiDevice);
-    midiInClose(hMidiDevice);
-
-    std::cout << "サーバー終了." << std::endl;
     return 0;
 }
+catch (const libremidi::midi_exception& error)
+{
+    std::cerr << error.what() << std::endl;
+    return EXIT_FAILURE;
+}
 
-// MIDI入力コールバック関数
-void CALLBACK MidiInProc(HMIDIIN hMidiIn, UINT wMsg, DWORD_PTR dwInstance, DWORD_PTR dwParam1, DWORD_PTR dwParam2) {
-    switch(wMsg) {
-    case MIM_OPEN:
-        std::cout << "MIDI Device Opened" << std::endl;
-        break;
-    case MIM_CLOSE:
-        std::cout << "MIDI Device Closed" << std::endl;
-        break;
-    case MIM_DATA:
-        std::cout << "MIDI Data Received: " << dwParam1 << std::endl;
-        break;
-    default: // その他のメッセージ
-        std::cout << "MIDI Message: " << wMsg << std::endl;
-        break;
-    }
+std::string hexStr(const uint8_t *data, int len)
+{
+    std::stringstream ss;
+    ss << std::hex;
+
+    for( int i(0) ; i < len; ++i )
+        ss << std::setw(2) << std::setfill('0') << (int)data[i];
+
+    return ss.str();
 }
 
 // プログラムの実行: Ctrl + F5 または [デバッグ] > [デバッグなしで開始] メニュー
