@@ -9,7 +9,7 @@
 
 // プリコンパイルするヘッダーをここに追加します
 #include "framework.h"
-#include <UdpSocket.h>
-#include <OscOutboundPacketStream.h>
+#include <ip/UdpSocket.h>
+#include <osc/OscOutboundPacketStream.h>
 
 #endif //PCH_H

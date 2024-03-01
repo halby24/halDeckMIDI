@@ -1,6 +1,8 @@
 ﻿#include "pch.h"
 #include "halDeckMIDIBackend.h"
 
+#include <iostream>
+
 constexpr int output_buffer_size = 1024;
 
 void halDeckMIDIBackend::set_volume(float volume)
@@ -11,6 +13,8 @@ void halDeckMIDIBackend::set_volume(float volume)
     p << osc::BeginMessage("/1/mastervolume")
         << volume
         << osc::EndMessage;
+
+    std::cout << "Sending message: " << p.Data() << std::endl;
 
     socket_.Send(p.Data(), p.Size());
 }

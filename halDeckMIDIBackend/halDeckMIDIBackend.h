@@ -1,12 +1,12 @@
 ﻿#pragma once
+#include "pch.h"
 
-constexpr const char* address = "127.0.0.1";
-constexpr int port = 7000;
+#define DLLEXPORT   __declspec( dllexport )
 
-class halDeckMIDIBackend
+class DLLEXPORT halDeckMIDIBackend
 {
 public:
-    halDeckMIDIBackend() : socket_(IpEndpointName(address, port)) {}
+    halDeckMIDIBackend(const unsigned long address, const int port) : socket_(IpEndpointName(address, port)) {}
     void set_volume(float volume);
 private:
     UdpTransmitSocket socket_;

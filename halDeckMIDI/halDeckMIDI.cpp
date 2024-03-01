@@ -8,25 +8,81 @@
 #include <iostream>
 #include <map>
 #include <thread>
+#include <halDeckMIDIBackend.h>
 
-std::string hexStr(const uint8_t *data, int len);
+std::string hexStr(const uint8_t* data, int len);
+void send_key_input(const WORD& vk);
+void send_key_input(const std::vector<WORD>& vks);
 
 int main()
 try
 {
+    halDeckMIDIBackend backend(0x7F000001, 7001);
+
     // Set the configuration of our MIDI port
     // Note that the callback will be invoked from a separate thread,
     // it is up to you to protect your data structures afterwards.
     // For instance if you are using a GUI toolkit, don't do GUI actions
     // in that callback !
-    auto my_callback = [](const libremidi::message& message) {
+    auto my_callback = [&](const libremidi::message& message)
+    {
+        const auto size = message.size();
+        const auto data = message.bytes.data();
+
         std::cout << "Received message: ";
-        std::cout << hexStr(message.bytes.data(), message.size()) << '\n';
+        std::cout << hexStr(data, size) << '\n';
+
+        if (size == 0)
+            return;
+        if (data[0] == 0xB0) // Control Change
+        {
+            const auto key = data[1];
+            const auto value = data[2];
+
+            if (key == 0x00) // Volume
+            {
+                const auto volume = value / 127.0f;
+                backend.set_volume(volume);
+            }
+
+            if (key == 0x29 && value > 0) // Play
+            {
+                std::cout << "Play\n";
+                send_key_input(VK_MEDIA_PLAY_PAUSE);
+            }
+            if (key == 0x2A && value > 0) // Stop
+            {
+                std::cout << "Stop\n";
+                send_key_input(VK_MEDIA_STOP);
+            }
+            if (key == 0x2C && value > 0) // Next
+            {
+                std::cout << "Next\n";
+                send_key_input(VK_MEDIA_NEXT_TRACK);
+            }
+            if (key == 0x2B && value > 0) // Previous
+            {
+                std::cout << "Previous\n";
+                send_key_input(VK_MEDIA_PREV_TRACK);
+            }
+            if (key == 0x3B && value > 0) // Right Desktop
+            {
+                std::cout << "Right Desktop\n";
+                const std::vector<WORD> vks{ VK_LWIN, VK_CONTROL, VK_RIGHT };
+                send_key_input(vks);
+            }
+            if (key == 0x3A && value > 0) // Left Desktop
+            {
+                std::cout << "Left Desktop\n";
+                const std::vector<WORD> vks{ VK_LWIN, VK_CONTROL, VK_LEFT };
+                send_key_input(vks);
+            }
+        }
     };
 
     // Create the midi object
     libremidi::midi_in midi_in{
-        libremidi::input_configuration{ .on_message = my_callback }
+        libremidi::input_configuration{.on_message = my_callback}
     };
 
     for (auto& api : libremidi::available_apis())
@@ -76,16 +132,53 @@ catch (const libremidi::midi_exception& error)
     return EXIT_FAILURE;
 }
 
-std::string hexStr(const uint8_t *data, int len)
+std::string hexStr(const uint8_t* data, int len)
 {
     std::stringstream ss;
     ss << std::hex;
 
-    for( int i(0) ; i < len; ++i )
+    for (int i(0); i < len; ++i)
         ss << std::setw(2) << std::setfill('0') << (int)data[i];
 
     return ss.str();
 }
+
+void send_key_input(const std::vector<WORD>& vks)
+{
+    std::vector<INPUT> ips;
+    for (const auto vk : vks)
+    {
+        INPUT ip;
+        ip.type = INPUT_KEYBOARD;
+        ip.ki.wVk = vk;
+        ip.ki.dwFlags = 0;
+        ip.ki.time = 0;
+        ip.ki.dwExtraInfo = 0;
+        ips.push_back(ip);
+    }
+    std::vector<WORD> reversed_vks(vks);
+    std::ranges::reverse(reversed_vks);
+    for (const auto vk : reversed_vks)
+    {
+        INPUT ip;
+        ip.type = INPUT_KEYBOARD;
+        ip.ki.wVk = vk;
+        ip.ki.dwFlags = KEYEVENTF_KEYUP;
+        ip.ki.time = 0;
+        ip.ki.dwExtraInfo = 0;
+        ips.push_back(ip);
+    }
+    SendInput(ips.size(), ips.data(), sizeof(INPUT));
+
+}
+
+void send_key_input(const WORD& vk)
+{
+    std::vector<WORD> vks;
+    vks.push_back(vk);
+    send_key_input(vks);
+}
+
 
 // プログラムの実行: Ctrl + F5 または [デバッグ] > [デバッグなしで開始] メニュー
 // プログラムのデバッグ: F5 または [デバッグ] > [デバッグの開始] メニュー
