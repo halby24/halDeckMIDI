@@ -146,7 +146,7 @@ std::string hexStr(const uint8_t* data, int len)
 void send_key_input(const std::vector<WORD>& vks)
 {
     std::vector<INPUT> ips;
-    for (const auto vk : vks)
+    for (auto&& vk : vks)
     {
         INPUT ip;
         ip.type = INPUT_KEYBOARD;
@@ -158,7 +158,7 @@ void send_key_input(const std::vector<WORD>& vks)
     }
     std::vector<WORD> reversed_vks(vks);
     std::ranges::reverse(reversed_vks);
-    for (const auto vk : reversed_vks)
+    for (auto&& vk : reversed_vks)
     {
         INPUT ip;
         ip.type = INPUT_KEYBOARD;
@@ -169,7 +169,6 @@ void send_key_input(const std::vector<WORD>& vks)
         ips.push_back(ip);
     }
     SendInput(ips.size(), ips.data(), sizeof(INPUT));
-
 }
 
 void send_key_input(const WORD& vk)
