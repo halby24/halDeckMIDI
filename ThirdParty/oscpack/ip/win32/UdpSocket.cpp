@@ -316,7 +316,7 @@ static bool CompareScheduledTimerCalls(
 }
 
 
-SocketReceiveMultiplexer *multiplexerInstanceToAbortWithSigInt_ = 0;
+SocketReceiveMultiplexer *multiplexerInstanceToAbortWithSigInt_ = nullptr;
 
 extern "C" /*static*/ void InterruptSignalHandler( int );
 /*static*/ void InterruptSignalHandler( int )
@@ -349,7 +349,7 @@ class SocketReceiveMultiplexer::Implementation{
 public:
     Implementation()
 	{
-		breakEvent_ = CreateEvent( NULL, FALSE, FALSE, NULL );
+		breakEvent_ = CreateEvent(nullptr, FALSE, FALSE, nullptr);
 	}
 
     ~Implementation()
@@ -405,11 +405,11 @@ public:
 		// we use this instead of select() primarily to support the AsyncBreak() 
 		// mechanism.
 
-		std::vector<HANDLE> events( socketListeners_.size() + 1, 0 );
+		std::vector<HANDLE> events( socketListeners_.size() + 1, nullptr );
 		int j=0;
 		for( std::vector< std::pair< PacketListener*, UdpSocket* > >::iterator i = socketListeners_.begin();
 				i != socketListeners_.end(); ++i, ++j ){
-			const HANDLE event = CreateEvent( NULL, FALSE, FALSE, NULL );
+			const HANDLE event = CreateEvent(nullptr, FALSE, FALSE, nullptr);
 			WSAEventSelect( i->second->impl_->Socket(), event, FD_READ ); // note that this makes the socket non-blocking which is why we can safely call RecieveFrom() on all sockets below
 			events[j] = event;
 		}
@@ -555,7 +555,7 @@ void SocketReceiveMultiplexer::RunUntilSigInt()
 #ifndef WINCE
 	signal( SIGINT, SIG_DFL );
 #endif
-	multiplexerInstanceToAbortWithSigInt_ = 0;
+	multiplexerInstanceToAbortWithSigInt_ = nullptr;
 }
 
 void SocketReceiveMultiplexer::Break()

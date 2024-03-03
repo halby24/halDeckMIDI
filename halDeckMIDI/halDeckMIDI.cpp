@@ -7,17 +7,25 @@
 #include <iostream>
 #include <thread>
 #include <libremidi/libremidi.hpp>
+#include <atlstr.h>
+#include <filesystem>
+#include <thread>
 
 using namespace std::string_literals;
+namespace fs = std::filesystem;
 
 std::string hexStr(const uint8_t* data, int len);
 void send_key_input(const WORD& vk);
 void send_key_input(const std::vector<WORD>& vks);
+std::string GetModulePath();
 
 int main()
 try
 {
-	auto backend_maybe = halDeckMIDIBackend::create("127.0.0.1", 7001, "config.toml"s);
+	const auto exe_path = GetModulePath();
+	const fs::path exe_dir = fs::path(exe_path).parent_path();
+	const fs::path config_path = exe_dir / "config.toml";
+	auto backend_maybe = halDeckMIDIBackend::create("127.0.0.1", 7001, config_path.string());
 	if (backend_maybe.has_value() == false)
 	{
 		std::cerr << backend_maybe.error() << '\n';
@@ -82,6 +90,22 @@ try
 					std::cout << "Left Desktop\n";
 					const std::vector<WORD> vks{ VK_LWIN, VK_CONTROL, VK_LEFT };
 					send_key_input(vks);
+				}
+				if (key == 0x3C && value > 0) // Toggle Pin Window
+				{
+					std::cout << "Toggle Pin Window\n";
+					std::thread([&backend]()
+					{
+						auto result = backend.toggle_pin_active_window();
+						if (result.has_value() == false)
+						{
+							std::cerr << result.error() << '\n';
+						}
+						auto [str_stdout, str_stderr, exit_code] = result.value();
+						std::cout << "stdout: " << str_stdout << '\n';
+						std::cout << "stderr: " << str_stderr << '\n';
+						std::cout << "exit_code: " << exit_code << '\n';
+					}).detach();
 				}
 			}
 		};
@@ -182,6 +206,26 @@ void send_key_input(const WORD& vk)
 	std::vector<WORD> vks;
 	vks.push_back(vk);
 	send_key_input(vks);
+}
+
+// 実行ファイルパス取得
+std::string GetModulePath()
+{
+	// 返却値
+	CString res = static_cast<LPCTSTR>(nullptr);
+	// フルパスを取得
+	if (TCHAR path[_MAX_PATH]; ::GetModuleFileName(nullptr, path, _MAX_PATH) != 0)
+	{
+		// パス、ドライブ名、ディレクトリ名、ファイル名、拡張子
+		TCHAR drive[_MAX_PATH], dir[_MAX_PATH], file[_MAX_PATH], ext[_MAX_PATH];
+		// ファイルパスを分割
+		::_tsplitpath_s(path, drive, _MAX_PATH, dir, _MAX_PATH, file, _MAX_PATH, ext, _MAX_PATH);
+		// ドライブ名とディレクトリ名を結合
+		res = ::PathCombine(path, drive, dir);
+	}
+
+	std::string path_str = CStringA(res).GetBuffer();
+	return path_str;
 }
 
 
