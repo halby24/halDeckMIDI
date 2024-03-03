@@ -441,7 +441,7 @@ void ReceivedMessageArgument::AsBlob( const void*& data, osc_bundle_element_size
 void ReceivedMessageArgument::AsBlobUnchecked( const void*& data, osc_bundle_element_size_t& size ) const
 {
     // read blob size as an unsigned int then validate
-    osc_bundle_element_size_t sizeResult = (osc_bundle_element_size_t)ToUInt32( argumentPtr_ );
+    const osc_bundle_element_size_t sizeResult = (osc_bundle_element_size_t)ToUInt32( argumentPtr_ );
     if( !IsValidElementSizeValue(sizeResult) )
         throw MalformedMessageException("invalid blob size");
 
@@ -532,7 +532,7 @@ void ReceivedMessageArgumentIterator::Advance()
         case BLOB_TYPE_TAG:
             {
                 // treat blob size as an unsigned int for the purposes of this calculation
-                uint32 blobSize = ToUInt32( value_.argumentPtr_ );
+                const uint32 blobSize = ToUInt32( value_.argumentPtr_ );
                 value_.argumentPtr_ = value_.argumentPtr_ + osc::OSC_SIZEOF_INT32 + RoundUp4( blobSize );
             }
             break;
@@ -693,7 +693,7 @@ void ReceivedMessage::Init( const char *message, osc_bundle_element_size_t size 
                                 MalformedMessageException( "arguments exceed message size" );
                                 
                             // treat blob size as an unsigned int for the purposes of this calculation
-                            uint32 blobSize = ToUInt32( argument );
+                            const uint32 blobSize = ToUInt32( argument );
                             argument = argument + osc::OSC_SIZEOF_INT32 + RoundUp4( blobSize );
                             if( argument > end )
                                 MalformedMessageException( "arguments exceed message size" );
@@ -714,7 +714,7 @@ void ReceivedMessage::Init( const char *message, osc_bundle_element_size_t size 
         // These invariants should be guaranteed by the above code.
         // we depend on them in the implementation of ArgumentCount()
 #ifndef NDEBUG
-        std::ptrdiff_t argumentCount = typeTagsEnd_ - typeTagsBegin_;
+        const std::ptrdiff_t argumentCount = typeTagsEnd_ - typeTagsBegin_;
         assert( argumentCount >= 0 );
         assert( argumentCount <= OSC_INT32_MAX );
 #endif
@@ -770,7 +770,7 @@ void ReceivedBundle::Init( const char *bundle, osc_bundle_element_size_t size )
             throw MalformedBundleException( "packet too short for elementSize" );
 
         // treat element size as an unsigned int for the purposes of this calculation
-        uint32 elementSize = ToUInt32( p );
+        const uint32 elementSize = ToUInt32( p );
         if( (elementSize & ((uint32)0x03)) != 0 )
             throw MalformedBundleException( "bundle element size must be multiple of four" );
 

@@ -8,9 +8,9 @@
 #include <string>
 
 int main() {
-    UINT numDevs = midiInGetNumDevs(); // 利用可能なMIDI入力デバイスの数を取得
+    const UINT numDevs = midiInGetNumDevs(); // 利用可能なMIDI入力デバイスの数を取得
     if (numDevs == 0) {
-        std::cout << "No MIDI input devices available." << std::endl;
+        std::cout << "No MIDI input devices available." << '\n';
         return 0;
     }
 
@@ -21,17 +21,19 @@ int main() {
         // 各デバイスの能力情報を取得
         result = midiInGetDevCaps(i, &midiInCaps, sizeof(MIDIINCAPS));
         if (result != MMSYSERR_NOERROR) {
-            std::cerr << "Error getting device capabilities for device " << i << std::endl;
+            std::cerr << "Error getting device capabilities for device " << i << '\n';
             continue;
         }
 
         // デバイス情報を表示
-        std::wcout << "Device ID: " << i << std::endl;
-        std::wcout << "Name: " << midiInCaps.szPname << std::endl;
-        std::wcout << "MIDI Channels: " << (midiInCaps.wMid == 0 ? L"Unknown" : std::to_wstring(midiInCaps.wMid)) << std::endl;
-        std::wcout << "Manufacturer ID: " << midiInCaps.wMid << std::endl;
-        std::wcout << "Product ID: " << midiInCaps.wPid << std::endl;
-        std::wcout << "Driver Version: " << HIWORD(midiInCaps.vDriverVersion) << "." << LOWORD(midiInCaps.vDriverVersion) << std::endl << std::endl;
+        std::wcout << "Device ID: " << i << '\n';
+        std::wcout << "Name: " << midiInCaps.szPname << '\n';
+        std::wcout << "MIDI Channels: " << (midiInCaps.wMid == 0 ? L"Unknown" : std::to_wstring(midiInCaps.wMid)) <<
+            '\n';
+        std::wcout << "Manufacturer ID: " << midiInCaps.wMid << '\n';
+        std::wcout << "Product ID: " << midiInCaps.wPid << '\n';
+        std::wcout << "Driver Version: " << HIWORD(midiInCaps.vDriverVersion) << "." << LOWORD(midiInCaps.vDriverVersion) <<
+            '\n' << '\n';
         std::cout << "\n";
     }
 

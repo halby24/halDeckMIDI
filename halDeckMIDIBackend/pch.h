@@ -11,5 +11,7 @@
 #include "framework.h"
 #include <ip/UdpSocket.h>
 #include <osc/OscOutboundPacketStream.h>
+#include <expected>
+#include <string>
 
 #endif //PCH_H

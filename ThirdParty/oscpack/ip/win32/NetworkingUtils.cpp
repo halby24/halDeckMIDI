@@ -57,7 +57,7 @@ NetworkInitializer::NetworkInitializer()
 
         // initialize winsock
 	    WSAData wsaData;
-	    int nCode = WSAStartup(MAKEWORD(1, 1), &wsaData);
+        const int nCode = WSAStartup(MAKEWORD(1, 1), &wsaData);
 	    if( nCode != 0 ){
 	        //std::cout << "WSAStartup() failed with error code " << nCode << "\n";
         }else{
@@ -84,7 +84,7 @@ unsigned long GetHostByName( const char *name )
 
     unsigned long result = 0;
 
-    struct hostent *h = gethostbyname( name );
+    const struct hostent *h = gethostbyname( name );
     if( h ){
         struct in_addr a;
         std::memcpy( &a, h->h_addr_list[0], h->h_length );

@@ -123,7 +123,7 @@ public:
 
 	void SetEnableBroadcast( bool enableBroadcast )
 	{
-		char broadcast = (char)((enableBroadcast) ? 1 : 0); // char on win32
+		const char broadcast = (char)((enableBroadcast) ? 1 : 0); // char on win32
 		setsockopt(socket_, SOL_SOCKET, SO_BROADCAST, &broadcast, sizeof(broadcast));
 	}
 
@@ -133,7 +133,7 @@ public:
 		// "Using SO_REUSEADDR and SO_EXCLUSIVEADDRUSE"
 		// http://msdn.microsoft.com/en-us/library/ms740621%28VS.85%29.aspx
 
-		char reuseAddr = (char)((allowReuse) ? 1 : 0); // char on win32
+		const char reuseAddr = (char)((allowReuse) ? 1 : 0); // char on win32
 		setsockopt(socket_, SOL_SOCKET, SO_REUSEADDR, &reuseAddr, sizeof(reuseAddr));
 	}
 
@@ -227,9 +227,9 @@ public:
 
 		struct sockaddr_in fromAddr;
         socklen_t fromAddrLen = sizeof(fromAddr);
-             	 
-        int result = recvfrom(socket_, data, (int)size, 0,
-                    (struct sockaddr *) &fromAddr, (socklen_t*)&fromAddrLen);
+
+		const int result = recvfrom(socket_, data, (int)size, 0,
+		                            (struct sockaddr *) &fromAddr, (socklen_t*)&fromAddrLen);
 		if( result < 0 )
 			return 0;
 
@@ -366,7 +366,7 @@ public:
 
     void DetachSocketListener( UdpSocket *socket, PacketListener *listener )
 	{
-		std::vector< std::pair< PacketListener*, UdpSocket* > >::iterator i = 
+		const std::vector< std::pair< PacketListener*, UdpSocket* > >::iterator i = 
 				std::find( socketListeners_.begin(), socketListeners_.end(), std::make_pair(listener, socket) );
 		assert( i != socketListeners_.end() );
 
@@ -409,8 +409,7 @@ public:
 		int j=0;
 		for( std::vector< std::pair< PacketListener*, UdpSocket* > >::iterator i = socketListeners_.begin();
 				i != socketListeners_.end(); ++i, ++j ){
-
-			HANDLE event = CreateEvent( NULL, FALSE, FALSE, NULL );
+			const HANDLE event = CreateEvent( NULL, FALSE, FALSE, NULL );
 			WSAEventSelect( i->second->impl_->Socket(), event, FD_READ ); // note that this makes the socket non-blocking which is why we can safely call RecieveFrom() on all sockets below
 			events[j] = event;
 		}
@@ -420,7 +419,7 @@ public:
 
 		
 		// configure the timer queue
-		double currentTimeMs = GetCurrentTimeMs();
+		const double currentTimeMs = GetCurrentTimeMs();
 
 		// expiry time ms, listener
 		std::vector< std::pair< double, AttachedTimerListener > > timerQueue_;
@@ -445,13 +444,13 @@ public:
                             : 0 );
             }
 
-			DWORD waitResult = WaitForMultipleObjects( (DWORD)socketListeners_.size() + 1, &events[0], FALSE, waitTime );
+			const DWORD waitResult = WaitForMultipleObjects( (DWORD)socketListeners_.size() + 1, &events[0], FALSE, waitTime );
 			if( break_ )
 				break;
 
 			if( waitResult != WAIT_TIMEOUT ){
 				for( int i = waitResult - WAIT_OBJECT_0; i < (int)socketListeners_.size(); ++i ){
-					std::size_t size = socketListeners_[i].second->ReceiveFrom( remoteEndpoint, data, MAX_BUFFER_SIZE );
+					const std::size_t size = socketListeners_[i].second->ReceiveFrom( remoteEndpoint, data, MAX_BUFFER_SIZE );
 					if( size > 0 ){
 						socketListeners_[i].first->ProcessPacket( data, (int)size, remoteEndpoint );
 						if( break_ )

@@ -215,10 +215,10 @@ void OutboundPacketStream::EndElement( char *endPtr )
         // then we store the element size in the slot. note that the element
         // size does not include the size slot, hence the - 4 below.
 
-        std::ptrdiff_t d = endPtr - reinterpret_cast<char*>(elementSizePtr_);
+        const std::ptrdiff_t d = endPtr - reinterpret_cast<char*>(elementSizePtr_);
         // assert( d >= 4 && d <= 0x7FFFFFFF ); // assume packets smaller than 2Gb
 
-        uint32 elementSize = static_cast<uint32>(d - 4);
+        const uint32 elementSize = static_cast<uint32>(d - 4);
         FromUInt32( reinterpret_cast<char*>(elementSizePtr_), elementSize );
 
         // finally, we reset the element size ptr to the containing element
@@ -235,7 +235,7 @@ bool OutboundPacketStream::ElementSizeSlotRequired() const
 
 void OutboundPacketStream::CheckForAvailableBundleSpace()
 {
-    std::size_t required = Size() + ((ElementSizeSlotRequired())?4:0) + 16;
+    const std::size_t required = Size() + ((ElementSizeSlotRequired())?4:0) + 16;
 
     if( required > Capacity() )
         throw OutOfBufferMemoryException();
@@ -245,7 +245,7 @@ void OutboundPacketStream::CheckForAvailableBundleSpace()
 void OutboundPacketStream::CheckForAvailableMessageSpace( const char *addressPattern )
 {
     // plus 4 for at least four bytes of type tag
-    std::size_t required = Size() + ((ElementSizeSlotRequired())?4:0)
+    const std::size_t required = Size() + ((ElementSizeSlotRequired())?4:0)
             + RoundUp4(std::strlen(addressPattern) + 1) + 4;
 
     if( required > Capacity() )
@@ -256,7 +256,7 @@ void OutboundPacketStream::CheckForAvailableMessageSpace( const char *addressPat
 void OutboundPacketStream::CheckForAvailableArgumentSpace( std::size_t argumentLength )
 {
     // plus three for extra type tag, comma and null terminator
-    std::size_t required = (argumentCurrent_ - data_) + argumentLength
+    const std::size_t required = (argumentCurrent_ - data_) + argumentLength
             + RoundUp4( (end_ - typeTagsCurrent_) + 3 );
 
     if( required > Capacity() )
@@ -361,7 +361,7 @@ OutboundPacketStream& OutboundPacketStream::operator<<( const BeginMessage& rhs 
     messageCursor_ = BeginElement( messageCursor_ );
 
     std::strcpy( messageCursor_, rhs.addressPattern );
-    std::size_t rhsLength = std::strlen(rhs.addressPattern);
+    const std::size_t rhsLength = std::strlen(rhs.addressPattern);
     messageCursor_ += rhsLength + 1;
 
     // zero pad to 4-byte boundary
@@ -387,7 +387,7 @@ OutboundPacketStream& OutboundPacketStream::operator<<( const MessageTerminator&
     if( !IsMessageInProgress() )
         throw MessageNotInProgressException();
 
-    std::size_t typeTagsCount = end_ - typeTagsCurrent_;
+    const std::size_t typeTagsCount = end_ - typeTagsCurrent_;
 
     if( typeTagsCount ){
 
@@ -395,9 +395,9 @@ OutboundPacketStream& OutboundPacketStream::operator<<( const MessageTerminator&
         std::memcpy( tempTypeTags, typeTagsCurrent_, typeTagsCount );
 
         // slot size includes comma and null terminator
-        std::size_t typeTagSlotSize = RoundUp4( typeTagsCount + 2 );
+        const std::size_t typeTagSlotSize = RoundUp4( typeTagsCount + 2 );
 
-        std::size_t argumentsSize = argumentCurrent_ - messageCursor_;
+        const std::size_t argumentsSize = argumentCurrent_ - messageCursor_;
 
         std::memmove( messageCursor_ + typeTagSlotSize, messageCursor_, argumentsSize );
 
@@ -603,7 +603,7 @@ OutboundPacketStream& OutboundPacketStream::operator<<( const char *rhs )
 
     *(--typeTagsCurrent_) = STRING_TYPE_TAG;
     std::strcpy( argumentCurrent_, rhs );
-    std::size_t rhsLength = std::strlen(rhs);
+    const std::size_t rhsLength = std::strlen(rhs);
     argumentCurrent_ += rhsLength + 1;
 
     // zero pad to 4-byte boundary
@@ -623,7 +623,7 @@ OutboundPacketStream& OutboundPacketStream::operator<<( const Symbol& rhs )
 
     *(--typeTagsCurrent_) = SYMBOL_TYPE_TAG;
     std::strcpy( argumentCurrent_, rhs );
-    std::size_t rhsLength = std::strlen(rhs);
+    const std::size_t rhsLength = std::strlen(rhs);
     argumentCurrent_ += rhsLength + 1;
 
     // zero pad to 4-byte boundary

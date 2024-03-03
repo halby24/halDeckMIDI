@@ -170,7 +170,7 @@ public:
 
     ReceivedBundleElementIterator operator++(int)
     {
-        ReceivedBundleElementIterator old( *this );
+        const ReceivedBundleElementIterator old( *this );
         Advance();
         return old;
     }
@@ -297,7 +297,7 @@ public:
 
     ReceivedMessageArgumentIterator operator++(int)
     {
-        ReceivedMessageArgumentIterator old( *this );
+        const ReceivedMessageArgumentIterator old( *this );
         Advance();
         return old;
     }
