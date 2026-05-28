@@ -88,7 +88,7 @@ std::ostream& operator<<( std::ostream & os,
 
         case RGBA_COLOR_TYPE_TAG:
             {
-                const uint32 color = arg.AsRgbaColorUnchecked();
+                uint32 color = arg.AsRgbaColorUnchecked();
                 
                 os << "RGBA:0x"
                         << std::hex << std::setfill('0')
@@ -103,7 +103,7 @@ std::ostream& operator<<( std::ostream & os,
 
         case MIDI_MESSAGE_TYPE_TAG:
             {
-                const uint32 m = arg.AsMidiMessageUnchecked();
+                uint32 m = arg.AsMidiMessageUnchecked();
                 os << "midi (port, status, data1, data2):<<"
                         << std::hex << std::setfill('0')
                         << "0x" << std::setw(2) << (int)((m>>24) & 0xFF)
@@ -123,11 +123,11 @@ std::ostream& operator<<( std::ostream & os,
             {
                 os << "OSC-timetag:" << arg.AsTimeTagUnchecked() << " ";
 
-                const std::time_t t =
+                std::time_t t =
                         (unsigned long)( arg.AsTimeTagUnchecked() >> 32 );
 
                 const char *timeString = std::ctime( &t );
-                const size_t len = std::strlen( timeString );
+                size_t len = std::strlen( timeString );
 
                 // -1 to omit trailing newline from string returned by ctime()
                 if( len > 1 )
@@ -153,7 +153,7 @@ std::ostream& operator<<( std::ostream & os,
                 osc_bundle_element_size_t size;
                 arg.AsBlobUnchecked( data, size );
                 os << "OSC-blob:<<" << std::hex << std::setfill('0');
-                const unsigned char *p = (unsigned char*)data;
+                unsigned char *p = (unsigned char*)data;
                 for( osc_bundle_element_size_t i = 0; i < size; ++i ){
                     os << "0x" << std::setw(2) << int(p[i]);
                     if( i != size-1 )
@@ -248,10 +248,10 @@ std::ostream& operator<<( std::ostream & os, const ReceivedBundle& b )
 std::ostream& operator<<( std::ostream & os, const ReceivedPacket& p )
 {
     if( p.IsBundle() ){
-        const ReceivedBundle b(p);
+        ReceivedBundle b(p);
         os << b << "\n";
     }else{
-        const ReceivedMessage m(p);
+        ReceivedMessage m(p);
         os << m << "\n";
     }
 

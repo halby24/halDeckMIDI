@@ -158,7 +158,7 @@ OutboundPacketStream::OutboundPacketStream( char *buffer, std::size_t capacity )
     , typeTagsCurrent_( end_ )
     , messageCursor_( data_ )
     , argumentCurrent_( data_ )
-    , elementSizePtr_( nullptr )
+    , elementSizePtr_( 0 )
     , messageIsInProgress_( false )
 {
     // sanity check integer types declared in OscTypes.h 
@@ -178,7 +178,7 @@ OutboundPacketStream::~OutboundPacketStream()
 
 char *OutboundPacketStream::BeginElement( char *beginPtr )
 {
-    if( elementSizePtr_ == nullptr ){
+    if( elementSizePtr_ == 0 ){
 
         elementSizePtr_ = reinterpret_cast<uint32*>(data_);
 
@@ -203,7 +203,7 @@ void OutboundPacketStream::EndElement( char *endPtr )
 
     if( elementSizePtr_ == reinterpret_cast<uint32*>(data_) ){
 
-        elementSizePtr_ = nullptr;
+        elementSizePtr_ = 0;
 
     }else{
         // while building an element, an offset to the containing element's
@@ -215,10 +215,10 @@ void OutboundPacketStream::EndElement( char *endPtr )
         // then we store the element size in the slot. note that the element
         // size does not include the size slot, hence the - 4 below.
 
-        const std::ptrdiff_t d = endPtr - reinterpret_cast<char*>(elementSizePtr_);
+        std::ptrdiff_t d = endPtr - reinterpret_cast<char*>(elementSizePtr_);
         // assert( d >= 4 && d <= 0x7FFFFFFF ); // assume packets smaller than 2Gb
 
-        const uint32 elementSize = static_cast<uint32>(d - 4);
+        uint32 elementSize = static_cast<uint32>(d - 4);
         FromUInt32( reinterpret_cast<char*>(elementSizePtr_), elementSize );
 
         // finally, we reset the element size ptr to the containing element
@@ -229,13 +229,13 @@ void OutboundPacketStream::EndElement( char *endPtr )
 
 bool OutboundPacketStream::ElementSizeSlotRequired() const
 {
-    return (elementSizePtr_ != nullptr);
+    return (elementSizePtr_ != 0);
 }
 
 
 void OutboundPacketStream::CheckForAvailableBundleSpace()
 {
-    const std::size_t required = Size() + ((ElementSizeSlotRequired())?4:0) + 16;
+    std::size_t required = Size() + ((ElementSizeSlotRequired())?4:0) + 16;
 
     if( required > Capacity() )
         throw OutOfBufferMemoryException();
@@ -245,7 +245,7 @@ void OutboundPacketStream::CheckForAvailableBundleSpace()
 void OutboundPacketStream::CheckForAvailableMessageSpace( const char *addressPattern )
 {
     // plus 4 for at least four bytes of type tag
-    const std::size_t required = Size() + ((ElementSizeSlotRequired())?4:0)
+    std::size_t required = Size() + ((ElementSizeSlotRequired())?4:0)
             + RoundUp4(std::strlen(addressPattern) + 1) + 4;
 
     if( required > Capacity() )
@@ -256,7 +256,7 @@ void OutboundPacketStream::CheckForAvailableMessageSpace( const char *addressPat
 void OutboundPacketStream::CheckForAvailableArgumentSpace( std::size_t argumentLength )
 {
     // plus three for extra type tag, comma and null terminator
-    const std::size_t required = (argumentCurrent_ - data_) + argumentLength
+    std::size_t required = (argumentCurrent_ - data_) + argumentLength
             + RoundUp4( (end_ - typeTagsCurrent_) + 3 );
 
     if( required > Capacity() )
@@ -269,7 +269,7 @@ void OutboundPacketStream::Clear()
     typeTagsCurrent_ = end_;
     messageCursor_ = data_;
     argumentCurrent_ = data_;
-    elementSizePtr_ = nullptr;
+    elementSizePtr_ = 0;
     messageIsInProgress_ = false;
 }
 
@@ -313,7 +313,7 @@ bool OutboundPacketStream::IsMessageInProgress() const
 
 bool OutboundPacketStream::IsBundleInProgress() const
 {
-    return (elementSizePtr_ != nullptr);
+    return (elementSizePtr_ != 0);
 }
 
 
@@ -361,7 +361,7 @@ OutboundPacketStream& OutboundPacketStream::operator<<( const BeginMessage& rhs 
     messageCursor_ = BeginElement( messageCursor_ );
 
     std::strcpy( messageCursor_, rhs.addressPattern );
-    const std::size_t rhsLength = std::strlen(rhs.addressPattern);
+    std::size_t rhsLength = std::strlen(rhs.addressPattern);
     messageCursor_ += rhsLength + 1;
 
     // zero pad to 4-byte boundary
@@ -387,7 +387,7 @@ OutboundPacketStream& OutboundPacketStream::operator<<( const MessageTerminator&
     if( !IsMessageInProgress() )
         throw MessageNotInProgressException();
 
-    const std::size_t typeTagsCount = end_ - typeTagsCurrent_;
+    std::size_t typeTagsCount = end_ - typeTagsCurrent_;
 
     if( typeTagsCount ){
 
@@ -395,9 +395,9 @@ OutboundPacketStream& OutboundPacketStream::operator<<( const MessageTerminator&
         std::memcpy( tempTypeTags, typeTagsCurrent_, typeTagsCount );
 
         // slot size includes comma and null terminator
-        const std::size_t typeTagSlotSize = RoundUp4( typeTagsCount + 2 );
+        std::size_t typeTagSlotSize = RoundUp4( typeTagsCount + 2 );
 
-        const std::size_t argumentsSize = argumentCurrent_ - messageCursor_;
+        std::size_t argumentsSize = argumentCurrent_ - messageCursor_;
 
         std::memmove( messageCursor_ + typeTagSlotSize, messageCursor_, argumentsSize );
 
@@ -603,7 +603,7 @@ OutboundPacketStream& OutboundPacketStream::operator<<( const char *rhs )
 
     *(--typeTagsCurrent_) = STRING_TYPE_TAG;
     std::strcpy( argumentCurrent_, rhs );
-    const std::size_t rhsLength = std::strlen(rhs);
+    std::size_t rhsLength = std::strlen(rhs);
     argumentCurrent_ += rhsLength + 1;
 
     // zero pad to 4-byte boundary
@@ -623,7 +623,7 @@ OutboundPacketStream& OutboundPacketStream::operator<<( const Symbol& rhs )
 
     *(--typeTagsCurrent_) = SYMBOL_TYPE_TAG;
     std::strcpy( argumentCurrent_, rhs );
-    const std::size_t rhsLength = std::strlen(rhs);
+    std::size_t rhsLength = std::strlen(rhs);
     argumentCurrent_ += rhsLength + 1;
 
     // zero pad to 4-byte boundary

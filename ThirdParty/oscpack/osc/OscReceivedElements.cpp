@@ -65,7 +65,7 @@ static inline const char* FindStr4End( const char *p )
 static inline const char* FindStr4End( const char *p, const char *end )
 {
     if( p >= end )
-        return nullptr;
+        return 0;
 
 	if( p[0] == '\0' )    // special case for SuperCollider integer address pattern
 		return p + 4;
@@ -77,7 +77,7 @@ static inline const char* FindStr4End( const char *p, const char *end )
         p += 4;
 
     if( *p )
-        return nullptr;
+        return 0;
     else
         return p + 1;
 }
@@ -249,7 +249,7 @@ int32 ReceivedMessageArgument::AsInt32Unchecked() const
 
     return u.i;
 #else
-	return *(int32*)argument_;
+	return *(int32*)argumentPtr_;
 #endif
 }
 
@@ -280,7 +280,7 @@ float ReceivedMessageArgument::AsFloatUnchecked() const
 
     return u.f;
 #else
-	return *(float*)argument_;
+	return *(float*)argumentPtr_;
 #endif
 }
 
@@ -400,7 +400,7 @@ double ReceivedMessageArgument::AsDoubleUnchecked() const
 
     return u.d;
 #else
-	return *(double*)argument_;
+	return *(double*)argumentPtr_;
 #endif
 }
 
@@ -441,7 +441,7 @@ void ReceivedMessageArgument::AsBlob( const void*& data, osc_bundle_element_size
 void ReceivedMessageArgument::AsBlobUnchecked( const void*& data, osc_bundle_element_size_t& size ) const
 {
     // read blob size as an unsigned int then validate
-    const osc_bundle_element_size_t sizeResult = (osc_bundle_element_size_t)ToUInt32( argumentPtr_ );
+    osc_bundle_element_size_t sizeResult = (osc_bundle_element_size_t)ToUInt32( argumentPtr_ );
     if( !IsValidElementSizeValue(sizeResult) )
         throw MalformedMessageException("invalid blob size");
 
@@ -532,7 +532,7 @@ void ReceivedMessageArgumentIterator::Advance()
         case BLOB_TYPE_TAG:
             {
                 // treat blob size as an unsigned int for the purposes of this calculation
-                const uint32 blobSize = ToUInt32( value_.argumentPtr_ );
+                uint32 blobSize = ToUInt32( value_.argumentPtr_ );
                 value_.argumentPtr_ = value_.argumentPtr_ + osc::OSC_SIZEOF_INT32 + RoundUp4( blobSize );
             }
             break;
@@ -596,16 +596,16 @@ void ReceivedMessage::Init( const char *message, osc_bundle_element_size_t size 
     const char *end = message + size;
 
     typeTagsBegin_ = FindStr4End( addressPattern_, end );
-    if( typeTagsBegin_ == nullptr ){
+    if( typeTagsBegin_ == 0 ){
         // address pattern was not terminated before end
         throw MalformedMessageException( "unterminated address pattern" );
     }
 
     if( typeTagsBegin_ == end ){
         // message consists of only the address pattern - no arguments or type tags.
-        typeTagsBegin_ = nullptr;
-        typeTagsEnd_ = nullptr;
-        arguments_ = nullptr;
+        typeTagsBegin_ = 0;
+        typeTagsEnd_ = 0;
+        arguments_ = 0;
             
     }else{
         if( *typeTagsBegin_ != ',' )
@@ -613,15 +613,15 @@ void ReceivedMessage::Init( const char *message, osc_bundle_element_size_t size 
 
         if( *(typeTagsBegin_ + 1) == '\0' ){
             // zero length type tags
-            typeTagsBegin_ = nullptr;
-            typeTagsEnd_ = nullptr;
-            arguments_ = nullptr;
+            typeTagsBegin_ = 0;
+            typeTagsEnd_ = 0;
+            arguments_ = 0;
 
         }else{
             // check that all arguments are present and well formed
                 
             arguments_ = FindStr4End( typeTagsBegin_, end );
-            if( arguments_ == nullptr ){
+            if( arguments_ == 0 ){
                 throw MalformedMessageException( "type tags were not terminated before end of message" );
             }
 
@@ -683,7 +683,7 @@ void ReceivedMessage::Init( const char *message, osc_bundle_element_size_t size 
                         if( argument == end )
                             throw MalformedMessageException( "arguments exceed message size" );
                         argument = FindStr4End( argument, end );
-                        if( argument == nullptr )
+                        if( argument == 0 )
                             throw MalformedMessageException( "unterminated string argument" );
                         break;
 
@@ -693,7 +693,7 @@ void ReceivedMessage::Init( const char *message, osc_bundle_element_size_t size 
                                 MalformedMessageException( "arguments exceed message size" );
                                 
                             // treat blob size as an unsigned int for the purposes of this calculation
-                            const uint32 blobSize = ToUInt32( argument );
+                            uint32 blobSize = ToUInt32( argument );
                             argument = argument + osc::OSC_SIZEOF_INT32 + RoundUp4( blobSize );
                             if( argument > end )
                                 MalformedMessageException( "arguments exceed message size" );
@@ -714,7 +714,7 @@ void ReceivedMessage::Init( const char *message, osc_bundle_element_size_t size 
         // These invariants should be guaranteed by the above code.
         // we depend on them in the implementation of ArgumentCount()
 #ifndef NDEBUG
-        const std::ptrdiff_t argumentCount = typeTagsEnd_ - typeTagsBegin_;
+        std::ptrdiff_t argumentCount = typeTagsEnd_ - typeTagsBegin_;
         assert( argumentCount >= 0 );
         assert( argumentCount <= OSC_INT32_MAX );
 #endif
@@ -770,7 +770,7 @@ void ReceivedBundle::Init( const char *bundle, osc_bundle_element_size_t size )
             throw MalformedBundleException( "packet too short for elementSize" );
 
         // treat element size as an unsigned int for the purposes of this calculation
-        const uint32 elementSize = ToUInt32( p );
+        uint32 elementSize = ToUInt32( p );
         if( (elementSize & ((uint32)0x03)) != 0 )
             throw MalformedBundleException( "bundle element size must be multiple of four" );
 

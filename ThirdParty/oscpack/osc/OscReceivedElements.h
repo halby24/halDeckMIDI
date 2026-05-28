@@ -170,7 +170,7 @@ public:
 
     ReceivedBundleElementIterator operator++(int)
     {
-        const ReceivedBundleElementIterator old( *this );
+        ReceivedBundleElementIterator old( *this );
         Advance();
         return old;
     }
@@ -297,7 +297,7 @@ public:
 
     ReceivedMessageArgumentIterator operator++(int)
     {
-        const ReceivedMessageArgumentIterator old( *this );
+        ReceivedMessageArgumentIterator old( *this );
         Advance();
         return old;
     }
@@ -497,7 +497,7 @@ public:
      
 	ReceivedMessageArgumentIterator ArgumentsEnd() const
     {
-        return ReceivedMessageArgumentIterator( typeTagsEnd_, nullptr );
+        return ReceivedMessageArgumentIterator( typeTagsEnd_, 0 );
     }
 
     ReceivedMessageArgumentStream ArgumentStream() const

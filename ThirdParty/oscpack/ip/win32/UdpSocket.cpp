@@ -123,7 +123,7 @@ public:
 
 	void SetEnableBroadcast( bool enableBroadcast )
 	{
-		const char broadcast = (char)((enableBroadcast) ? 1 : 0); // char on win32
+		char broadcast = (char)((enableBroadcast) ? 1 : 0); // char on win32
 		setsockopt(socket_, SOL_SOCKET, SO_BROADCAST, &broadcast, sizeof(broadcast));
 	}
 
@@ -133,7 +133,7 @@ public:
 		// "Using SO_REUSEADDR and SO_EXCLUSIVEADDRUSE"
 		// http://msdn.microsoft.com/en-us/library/ms740621%28VS.85%29.aspx
 
-		const char reuseAddr = (char)((allowReuse) ? 1 : 0); // char on win32
+		char reuseAddr = (char)((allowReuse) ? 1 : 0); // char on win32
 		setsockopt(socket_, SOL_SOCKET, SO_REUSEADDR, &reuseAddr, sizeof(reuseAddr));
 	}
 
@@ -227,9 +227,9 @@ public:
 
 		struct sockaddr_in fromAddr;
         socklen_t fromAddrLen = sizeof(fromAddr);
-
-		const int result = recvfrom(socket_, data, (int)size, 0,
-		                            (struct sockaddr *) &fromAddr, (socklen_t*)&fromAddrLen);
+             	 
+        int result = recvfrom(socket_, data, (int)size, 0,
+                    (struct sockaddr *) &fromAddr, (socklen_t*)&fromAddrLen);
 		if( result < 0 )
 			return 0;
 
@@ -316,7 +316,7 @@ static bool CompareScheduledTimerCalls(
 }
 
 
-SocketReceiveMultiplexer *multiplexerInstanceToAbortWithSigInt_ = nullptr;
+SocketReceiveMultiplexer *multiplexerInstanceToAbortWithSigInt_ = 0;
 
 extern "C" /*static*/ void InterruptSignalHandler( int );
 /*static*/ void InterruptSignalHandler( int )
@@ -349,7 +349,7 @@ class SocketReceiveMultiplexer::Implementation{
 public:
     Implementation()
 	{
-		breakEvent_ = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+		breakEvent_ = CreateEvent( NULL, FALSE, FALSE, NULL );
 	}
 
     ~Implementation()
@@ -366,7 +366,7 @@ public:
 
     void DetachSocketListener( UdpSocket *socket, PacketListener *listener )
 	{
-		const std::vector< std::pair< PacketListener*, UdpSocket* > >::iterator i = 
+		std::vector< std::pair< PacketListener*, UdpSocket* > >::iterator i = 
 				std::find( socketListeners_.begin(), socketListeners_.end(), std::make_pair(listener, socket) );
 		assert( i != socketListeners_.end() );
 
@@ -405,11 +405,12 @@ public:
 		// we use this instead of select() primarily to support the AsyncBreak() 
 		// mechanism.
 
-		std::vector<HANDLE> events( socketListeners_.size() + 1, nullptr );
+		std::vector<HANDLE> events( socketListeners_.size() + 1, 0 );
 		int j=0;
 		for( std::vector< std::pair< PacketListener*, UdpSocket* > >::iterator i = socketListeners_.begin();
 				i != socketListeners_.end(); ++i, ++j ){
-			const HANDLE event = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+
+			HANDLE event = CreateEvent( NULL, FALSE, FALSE, NULL );
 			WSAEventSelect( i->second->impl_->Socket(), event, FD_READ ); // note that this makes the socket non-blocking which is why we can safely call RecieveFrom() on all sockets below
 			events[j] = event;
 		}
@@ -419,7 +420,7 @@ public:
 
 		
 		// configure the timer queue
-		const double currentTimeMs = GetCurrentTimeMs();
+		double currentTimeMs = GetCurrentTimeMs();
 
 		// expiry time ms, listener
 		std::vector< std::pair< double, AttachedTimerListener > > timerQueue_;
@@ -444,13 +445,13 @@ public:
                             : 0 );
             }
 
-			const DWORD waitResult = WaitForMultipleObjects( (DWORD)socketListeners_.size() + 1, &events[0], FALSE, waitTime );
+			DWORD waitResult = WaitForMultipleObjects( (DWORD)socketListeners_.size() + 1, &events[0], FALSE, waitTime );
 			if( break_ )
 				break;
 
 			if( waitResult != WAIT_TIMEOUT ){
 				for( int i = waitResult - WAIT_OBJECT_0; i < (int)socketListeners_.size(); ++i ){
-					const std::size_t size = socketListeners_[i].second->ReceiveFrom( remoteEndpoint, data, MAX_BUFFER_SIZE );
+					std::size_t size = socketListeners_[i].second->ReceiveFrom( remoteEndpoint, data, MAX_BUFFER_SIZE );
 					if( size > 0 ){
 						socketListeners_[i].first->ProcessPacket( data, (int)size, remoteEndpoint );
 						if( break_ )
@@ -555,7 +556,7 @@ void SocketReceiveMultiplexer::RunUntilSigInt()
 #ifndef WINCE
 	signal( SIGINT, SIG_DFL );
 #endif
-	multiplexerInstanceToAbortWithSigInt_ = nullptr;
+	multiplexerInstanceToAbortWithSigInt_ = 0;
 }
 
 void SocketReceiveMultiplexer::Break()
